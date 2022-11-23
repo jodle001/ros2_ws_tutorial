@@ -191,3 +191,58 @@
         ```
         [INFO] [1669076745.239056440] [cpp_test]: Hello cpp Node
         ```
+
+## Colcon
+
+* There are a few commands to know
+  
+
+* General build command:
+
+    ```
+    colcon build
+    ```
+
+* Build a specific package:
+
+    ```
+    colcon build --packages-select my_py_pkg
+    ```
+
+* Creating a link directly to source files instead of generating new files:
+* This is very helpful in python because any changes to source will not need to be re-build.  C++ also has an advantage where VScode errors will link directly to the file.
+
+    ```
+    colcon build --symlink-install
+    ```
+
+## rqt and rqt_graph
+
+* These are debugging tools that help with ros development.
+* rqt is a tool that has many plugins that help with many different aspects of ros2.
+* rqt_graph is a plugin within rqt that shows a graph style visualization of the current running nodes and topics on your system.
+* To open, here are the commands respectively:
+  
+    ```
+    rqt
+    rqt_graph
+    ```
+
+## ROS2 - Topics
+
+* Topics are one of the ways that ROS nodes communicate with each other.
+
+* Here is an analogy:
+
+    * Think of a radio transmitter as a publisher.
+    * The radio transmitter publishes to a topic (frequency of 98.7)
+    * Subscribers than can listen to that topic.
+
+    * Publishers and subscribers need to be using the same data structure, in the analogy this would be an encoding standard (AM/FM).
+
+    See here:
+
+    ![Radio Analogy](./media/radio_analogy.png)
+
+* Communication using topics are anonymous.  Subscibers and publishers only know they are communicating over a topic, they recieve no information about who is sending or recieving the messages.
+

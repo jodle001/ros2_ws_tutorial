@@ -246,3 +246,43 @@
 
 * Communication using topics are anonymous.  Subscibers and publishers only know they are communicating over a topic, they recieve no information about who is sending or recieving the messages.
 
+
+## ROS2 - Services
+
+* These are another type of comunication between nodes. These are a server/client style of communication.
+* These can be synchronous or asynchronous
+* One message type for requests, and one message type for responce.
+* Can be written in Python or C++ in ROS2 nodes.
+
+* Here is an analogy:
+
+    * Think of a website that provides a weather service.
+    * There are clients that will send requests with their location data.
+    * The weather service will send responces to each client of the appropriate weather data for their location.
+    * This is all done using an `http` service.
+
+    See here:
+
+    ![Weather Service Analogy](./media/service_analogy.png)
+
+
+* Here we can look at an example service:
+
+    * Type in this command:
+
+        ```
+        ros2 interface show example_interfaces/src/AddTwoInts
+        ```
+
+    * This will output:
+
+        ```
+        int64 a
+        int64 b
+        ---
+        int64 sum
+        ```
+
+    * The two integers on top are the inputs, and the bottom integer is the response.
+
+    * Every service will have a 3-dash separator between the inputs and the responses.

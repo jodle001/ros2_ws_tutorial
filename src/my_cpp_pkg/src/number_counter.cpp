@@ -15,6 +15,10 @@ public:
             "number", 10,
             std::bind(&NumberCounterNode::callbackNumber, this, std::placeholders::_1));
         
+
+        publisher_ = this->create_publisher<example_interfaces::msg::Int64>("number_count", 10);
+
+
         server_ = this->create_service<example_interfaces::srv::SetBool>(
             "reset_counter",
             std::bind(&NumberCounterNode::callbackResetNumber, this, _1, _2));
@@ -26,7 +30,10 @@ private:
     void callbackNumber(const example_interfaces::msg::Int64::SharedPtr msg)
     {
         num_ += msg->data;
-        RCLCPP_INFO(this->get_logger(), "%d", num_);
+        // RCLCPP_INFO(this->get_logger(), "%d", num_);
+        auto msgOut = example_interfaces::msg::Int64();
+        msgOut.data = num_;
+        publisher_->publish(msgOut);
     }
 
     void callbackResetNumber(
@@ -57,8 +64,10 @@ private:
         }
     }
 
-    int num_;
+    int64_t num_;
     rclcpp::Subscription<example_interfaces::msg::Int64>::SharedPtr subscriber_;
+    rclcpp::Publisher<example_interfaces::msg::Int64>::SharedPtr publisher_;
+    rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Service<example_interfaces::srv::SetBool>::SharedPtr server_;
 };
 

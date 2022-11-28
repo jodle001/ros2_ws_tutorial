@@ -1,3 +1,1 @@
-bool led1
-bool led2
-bool led3
+int64[] led_states

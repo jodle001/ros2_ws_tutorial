@@ -1,45 +1,41 @@
 #include "rclcpp/rclcpp.hpp"
 #include "my_robot_interfaces/msg/turtle.hpp"
 #include "my_robot_interfaces/msg/turtle_array.hpp"
+#include "my_robot_interfaces/srv/catch_turtle.hpp"
 #include "turtlesim/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include <math.h>
 
-using std::placeholders::_1;
-
 class TurtleControllerNode : public rclcpp::Node
 {
 public:
-    TurtleControllerNode() : Node("turtle_controller"), turtlesimUp_(false)
+    TurtleControllerNode() : Node("turtle_controller"), name_("turtle1"), turtlesim_up_(false)
     {
-        poseSub_ = this->create_subscription<turtlesim::msg::Pose>(
-            "turtle1/pose",
-            10,
-            std::bind(&TurtleControllerNode::subscribeTurtlePose, this, _1));
 
-        turtleArraySub_ = this->create_subscription<my_robot_interfaces::msg::TurtleArray>(
-            "alive_turtles",
-            10,
-            std::bind(&TurtleControllerNode::subscribeTurtleArray, this, _1));
+        cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>(
+            name_ + "/cmd_vel", 10);
+        pose_subscriber_ = this->create_subscription<turtlesim::msg::Pose>(
+            name_ + "/pose", 10, std::bind(&TurtleControllerNode::callbackPose, this, std::placeholders::_1));
+        turtles_to_catch_subscriber_ = this->create_subscription<my_robot_interfaces::msg::TurtleArray>(
+            "alive_turtles", 10, std::bind(&TurtleControllerNode::callbackTurtlesToCatch, this, std::placeholders::_1));
 
-        cmdVelPub_ = this->create_publisher<geometry_msgs::msg::Twist>("turtle1/cmd_vel", 10);
-
-        timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&TurtleControllerNode::controlLoop, this));
-
-        RCLCPP_INFO(this->get_logger(), "Turtle Controller has been started.");
+        control_loop_timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(10), std::bind(&TurtleControllerNode::controlLoop, this));
     }
 
 private:
-    void subscribeTurtlePose(const turtlesim::msg::Pose::SharedPtr msg)
+    void callbackPose(const turtlesim::msg::Pose::SharedPtr pose)
     {
-        pose_ = *msg.get();
-        turtlesimUp_ = true;
+        pose_ = *pose.get();
+        turtlesim_up_ = true;
     }
 
-    void subscribeTurtleArray(const my_robot_interfaces::msg::TurtleArray::SharedPtr msg)
+    void callbackTurtlesToCatch(const my_robot_interfaces::msg::TurtleArray::SharedPtr msg)
     {
         if (!msg->turtles.empty())
-            turtleToCatch_ = msg->turtles.at(0);
+        {
+            turtle_to_catch_ = msg->turtles.at(0);
+        }
     }
 
     void publishCmdVel(double x, double theta)
@@ -47,18 +43,18 @@ private:
         auto msg = geometry_msgs::msg::Twist();
         msg.linear.x = x;
         msg.angular.z = theta;
-        cmdVelPub_->publish(msg);
+        cmd_vel_publisher_->publish(msg);
     }
 
     void controlLoop()
     {
-        if (!turtlesimUp_ || turtleToCatch_.name == "")
+        if (!turtlesim_up_ || turtle_to_catch_.name == "")
         {
             return;
         }
 
-        double dist_x = turtleToCatch_.x - pose_.x;
-        double dist_y = turtleToCatch_.y - pose_.y;
+        double dist_x = turtle_to_catch_.x - pose_.x;
+        double dist_y = turtle_to_catch_.y - pose_.y;
         double distance = std::sqrt(dist_x * dist_x + dist_y * dist_y);
 
         auto msg = geometry_msgs::msg::Twist();
@@ -86,22 +82,55 @@ private:
             // target reached!
             msg.linear.x = 0.0;
             msg.angular.z = 0.0;
+            
+            catch_turtle_threads.push_back(
+                std::make_shared<std::thread>(
+                    std::bind(&TurtleControllerNode::callCatchTurtleService, this, turtle_to_catch_.name)));
+            turtle_to_catch_.name = "";
         }
 
-        cmdVelPub_->publish(msg);
+        cmd_vel_publisher_->publish(msg);
     }
 
+    void callCatchTurtleService(std::string turtle_name)
+    {
+        auto client = this->create_client<my_robot_interfaces::srv::CatchTurtle>("catch_turtle");
+        while (!client->wait_for_service(std::chrono::seconds(1)))
+        {
+            RCLCPP_WARN(this->get_logger(), "Waiting for Service Server to be up...");
+        }
 
-    rclcpp::Subscription<turtlesim::msg::Pose>::SharedPtr poseSub_;
-    rclcpp::Subscription<my_robot_interfaces::msg::TurtleArray>::SharedPtr turtleArraySub_;
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmdVelPub_;
+        auto request = std::make_shared<my_robot_interfaces::srv::CatchTurtle::Request>();
+        request->name = turtle_name;
+
+        auto future = client->async_send_request(request);
+
+        try
+        {
+            auto response = future.get();
+            if (!response->success)
+            {
+                RCLCPP_ERROR(this->get_logger(), "Failed to catch turtle");
+            }
+        }
+        catch (const std::exception &e)
+        {
+            RCLCPP_ERROR(this->get_logger(), "Service call failed.");
+        }
+    }
+
+    std::string name_;
     turtlesim::msg::Pose pose_;
-    my_robot_interfaces::msg::TurtleArray::SharedPtr aliveTurtles_;
-    my_robot_interfaces::msg::Turtle turtleToCatch_;
-    rclcpp::TimerBase::SharedPtr timer_;
-    bool turtlesimUp_;
-};
+    bool turtlesim_up_;
+    my_robot_interfaces::msg::Turtle turtle_to_catch_;
 
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_publisher_;
+    rclcpp::Subscription<turtlesim::msg::Pose>::SharedPtr pose_subscriber_;
+    rclcpp::Subscription<my_robot_interfaces::msg::TurtleArray>::SharedPtr turtles_to_catch_subscriber_;
+    rclcpp::TimerBase::SharedPtr control_loop_timer_;
+
+    std::vector<std::shared_ptr<std::thread>> catch_turtle_threads;
+};
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);

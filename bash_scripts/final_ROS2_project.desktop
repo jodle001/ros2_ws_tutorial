@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Name=ROS_RUN
+Exec=/home/jodle/ros2_ws_tutorial/bash_scripts/ros2_final.bash
+Icon=/home/jodle/ros2_ws_tutorial/bash_scripts/Iconka-Meow-Cat-purr.ico
+Terminal=true
+Type=Application
+Comment=This is an example of running a bash file instead of a command directly.

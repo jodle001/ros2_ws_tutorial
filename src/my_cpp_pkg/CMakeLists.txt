@@ -15,6 +15,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(example_interfaces REQUIRED)
 find_package(my_robot_interfaces REQUIRED)
+find_package(rosbag2_cpp REQUIRED)
+find_package(std_msgs REQUIRED)
 
 
 # Add executable to run node
@@ -57,6 +59,9 @@ ament_target_dependencies(battery rclcpp my_robot_interfaces)
 add_executable(led_panel src/led_panel_node.cpp)
 ament_target_dependencies(led_panel rclcpp my_robot_interfaces)
 
+add_executable(simple_bag_recorder src/simple_bag_recorder.cpp)
+ament_target_dependencies(simple_bag_recorder rclcpp std_msgs rosbag2_cpp)
+
 
 install(TARGETS
   cpp_node
@@ -71,6 +76,7 @@ install(TARGETS
   hardware_status_publisher
   battery
   led_panel
+  simple_bag_recorder
   DESTINATION lib/${PROJECT_NAME}
 )
 

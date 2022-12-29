@@ -19,7 +19,7 @@ public:
         publish_alive_turtles_timer_ = this->create_wall_timer(
             std::chrono::seconds(1), std::bind(&TurtleSpawnerNode::publishAliveTurtles, this));
         spawn_turtle_timer_ = this->create_wall_timer(
-            std::chrono::milliseconds(2000),
+            std::chrono::milliseconds(1000),
             std::bind(&TurtleSpawnerNode::spawnNewTurtle, this));
         catch_turtle_service_ = this->create_service<my_robot_interfaces::srv::CatchTurtle>(
             "catch_turtle", std::bind(&TurtleSpawnerNode::callbackCatchTurtle, this, std::placeholders::_1, std::placeholders::_2));

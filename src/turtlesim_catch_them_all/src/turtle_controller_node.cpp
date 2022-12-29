@@ -30,11 +30,26 @@ private:
         turtlesim_up_ = true;
     }
 
+    double getDist(my_robot_interfaces::msg::Turtle turtle) {
+        return std::pow(turtle.x - pose_.x, 2) + std::pow(turtle.y - pose_.y, 2);
+    }
+
     void callbackTurtlesToCatch(const my_robot_interfaces::msg::TurtleArray::SharedPtr msg)
     {
         if (!msg->turtles.empty())
         {
-            turtle_to_catch_ = msg->turtles.at(0);
+            auto turtles = msg->turtles;
+            my_robot_interfaces::msg::Turtle closest = turtles.at(0);
+            double dist = std::sqrt(getDist(closest));
+            int index = 0;
+            for (long unsigned int i=1; i<turtles.size(); i++) {
+                double newDist = std::sqrt(getDist(turtles.at(i)));
+                if (newDist < dist) {
+                    dist = newDist;
+                    index = i;
+                }
+            }
+            turtle_to_catch_ = turtles.at(index);
         }
     }
 
@@ -62,7 +77,7 @@ private:
         if (distance > 0.5)
         {
             // position
-            msg.linear.x = 2 * distance;
+            msg.linear.x = 3 * distance;
 
             // orientation
             double steering_angle = std::atan2(dist_y, dist_x);

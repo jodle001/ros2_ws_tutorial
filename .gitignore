@@ -3,3 +3,4 @@
 /install/
 /log/
 /src/my_py_pkg/my_py_pkg/__pycache__/
+/.idea/

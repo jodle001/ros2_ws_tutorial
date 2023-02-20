@@ -19,7 +19,7 @@ public:
         publish_alive_turtles_timer_ = this->create_wall_timer(
             std::chrono::seconds(1), std::bind(&TurtleSpawnerNode::publishAliveTurtles, this));
         spawn_turtle_timer_ = this->create_wall_timer(
-            std::chrono::milliseconds(1000),
+            std::chrono::milliseconds(500),
             std::bind(&TurtleSpawnerNode::spawnNewTurtle, this));
         catch_turtle_service_ = this->create_service<my_robot_interfaces::srv::CatchTurtle>(
             "catch_turtle", std::bind(&TurtleSpawnerNode::callbackCatchTurtle, this, std::placeholders::_1, std::placeholders::_2));
@@ -49,16 +49,16 @@ private:
     }
 
     void spawnNewTurtle()
-    {
-        turtle_counter_++;
-        auto name = turtle_name_prefix_ + std::to_string(turtle_counter_);
-        double x = randomDouble() * 10.0;
-        double y = randomDouble() * 10.0;
-        double theta = randomDouble() * 2 * M_PI;
+    {   
+            turtle_counter_++;
+            auto name = turtle_name_prefix_ + std::to_string(turtle_counter_);
+            double x = randomDouble() * 10.0;
+            double y = randomDouble() * 10.0;
+            double theta = randomDouble() * 2 * M_PI;
 
-        spawn_turtle_threads_.push_back(
-            std::make_shared<std::thread>(
-                std::bind(&TurtleSpawnerNode::callSpawnTurtleService, this, x, y, theta)));
+            spawn_turtle_threads_.push_back(
+                std::make_shared<std::thread>(
+                    std::bind(&TurtleSpawnerNode::callSpawnTurtleService, this, x, y, theta)));
     }
 
     void callSpawnTurtleService(double x, double y, double theta)
